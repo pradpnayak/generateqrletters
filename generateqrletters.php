@@ -3,6 +3,8 @@
 require_once 'generateqrletters.civix.php';
 // phpcs:disable
 use CRM_Generateqrletters_ExtensionUtil as E;
+
+define('GENERATEQRCODE_NO_CONTRIBUTIONPAGES', 5);
 // phpcs:enable
 
 /**
@@ -164,13 +166,10 @@ function generateqrletters_civicrm_searchTasks($objectName, &$tasks) {
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_tokens
  */
 function generateqrletters_civicrm_tokens(&$tokens) {
-  $tokens['generateqrletters'] = [
-    'generateqrletters.qrcode_1' => ts('Contribution Page QR Code 1'),
-    'generateqrletters.qrcode_2' => ts('Contribution Page QR Code 2'),
-    'generateqrletters.qrcode_3' => ts('Contribution Page QR Code 3'),
-    'generateqrletters.qrcode_4' => ts('Contribution Page QR Code 4'),
-    'generateqrletters.qrcode_5' => ts('Contribution Page QR Code 5'),
-  ];
+  $tokens['generateqrletters'] = [];
+  for ($i = 1; $i <= GENERATEQRCODE_NO_CONTRIBUTIONPAGES; $i++) {
+    $tokens['generateqrletters']["generateqrletters.qrcode_{$i}"] = ts('Contribution Page QR Code ') . $i;
+  }
 }
 
 /**
@@ -183,7 +182,11 @@ function generateqrletters_civicrm_tokenValues(&$values, $cids, $job = NULL, $to
     return;
   }
 
+  require_once __DIR__ . '/vendor/autoload.php';
+
   foreach ($cids as $cid) {
     CRM_GenerateQRLetters_Utils::generateQRCodeToken($values[$cid], $cid);
   }
+
+  //CRM_Core_Error::debug('$values', $values);exit;
 }
