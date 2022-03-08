@@ -41,19 +41,52 @@ class CRM_GenerateQRLetters_Form_Task_Letters extends CRM_Contact_Form_Task {
   public function preProcess() {
     parent::preProcess();
     $this->setTitle(ts('Generate QR Letters'));
+    $noContPages = CRM_GenerateQRLetters_Utils::getSettingValue('no_contribution_page_ids');
+
+    $this->assign('contributionPages', $noContPages + 1);
   }
 
   /**
    * Build the form object.
    */
   public function buildQuickForm() {
+    $noContPages = CRM_GenerateQRLetters_Utils::getSettingValue('no_contribution_page_ids');
     $this->addDefaultButtons(ts('Generate Invoice'));
+    CRM_Mailing_BAO_Mailing::commonCompose($this);
+    for ($i = 1; $i <= $noContPages; $i++) {
+      $this->addEntityRef("contribution_page_ids[{$i}]", ts('Contribution Page ' . $i), [
+        'context' => 'search',
+        'entity' => 'ContributionPage',
+        'select' => ['minimumInputLength' => 0],
+      ]);
+    }
+    $buttons[] = [
+      'type' => 'upload',
+      'name' => ts('Download Document'),
+      'isDefault' => TRUE,
+      'icon' => 'fa-download',
+    ];
+    $buttons[] = [
+      'type' => 'cancel',
+      'name' => $this->isFormInViewMode() ? ts('Done') : ts('Cancel'),
+    ];
+    $this->addButtons($buttons);
   }
 
   /**
    * Process the form after the input has been submitted and validated.
    */
   public function postProcess() {
+    $formValues = $this->controller->exportValues($this->getName());
+    $params = [
+      'html_message' => $formValues['html_message'],
+      'contribution_page_ids' => $formValues['contribution_page_ids'],
+    ];
+
+    $isRedirect = CRM_GenerateQRLetters_Utils::createPdfs($this->_contactIds, $params);
+    if ($isRedirect) {
+      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/a/#/status', ''));
+    }
   }
 
 }

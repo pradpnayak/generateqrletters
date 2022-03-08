@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/GenerateQRLetters</base>
+  <class>GenerateQRLettersCache</class>
+  <name>civicrm_qr_letters_cache</name>
+  <comment>Generate QR Letters Cache</comment>
+  <add>1.0</add>
+  <log>true</log>
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique Generate QR Letters Cache ID</comment>
+    <add>1.0</add>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+  <field>
+    <name>html_message</name>
+    <title>html message</title>
+    <type>longtext</type>
+    <import>true</import>
+    <comment>html_message</comment>
+    <add>1.0</add>
+  </field>
+  <field>
+    <name>form_values</name>
+    <title>Submitted Form Values</title>
+    <type>longtext</type>
+    <import>true</import>
+    <comment>Submitted form values for this template</comment>
+    <serialize>PHP</serialize>
+    <add>1.0</add>
+  </field>
+  <field>
+    <name>datetime</name>
+    <default>CURRENT_TIMESTAMP</default>
+    <title>Date</title>
+    <type>datetime</type>
+    <html>
+      <type>Select Date</type>
+      <formatType>activityDateTime</formatType>
+    </html>
+    <add>1.0</add>
+  </field>
+</table>

@@ -4,7 +4,6 @@ require_once 'generateqrletters.civix.php';
 // phpcs:disable
 use CRM_Generateqrletters_ExtensionUtil as E;
 
-define('GENERATEQRCODE_NO_CONTRIBUTIONPAGES', 5);
 // phpcs:enable
 
 /**
@@ -89,6 +88,36 @@ function generateqrletters_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  */
 function generateqrletters_civicrm_managed(&$entities) {
   _generateqrletters_civix_civicrm_managed($entities);
+  $entities[] = [
+    'module' => 'generateqrletters',
+    'name' => 'generateqrletters_zip_ext',
+    'update' => 'never',
+    'entity' => 'OptionValue',
+    'params' => [
+      'label' => 'zip',
+      'name' => 'zip',
+      'option_group_id' => 'safe_file_extension',
+      'is_active' => 1,
+      'version' => 3,
+      'options' => ['match' => ['option_group_id', 'name']],
+    ],
+  ];
+  $entities[] = [
+    'module' => 'generateqrletters',
+    'name' => 'generateqrletters_job',
+    'entity' => 'Job',
+    'update' => 'never',
+    'params' => [
+      'version' => 3,
+      'name' => 'Process Letters',
+      'description' => 'Process Letters',
+      'run_frequency' => 'Always',
+      'api_entity' => 'GenerateQRLettersCache',
+      'api_action' => 'processletters',
+      'parameters' => '',
+      'is_active' => TRUE,
+    ],
+  ];
 }
 
 /**
@@ -125,6 +154,29 @@ function generateqrletters_civicrm_angularModules(&$angularModules) {
  */
 function generateqrletters_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _generateqrletters_civix_civicrm_alterSettingsFolders($metaDataFolders);
+}
+
+/**
+ * Implements hook_civicrm_alterSettingsMetaData().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_alterSettingsMetaData
+ */
+function generateqrletters_civicrm_alterSettingsMetaData(&$settingsMetaData, $domainID, $profile) {
+  $settingsMetaData['generateqrletters'] = [
+    'group_name' => 'GenerateQRLetters Preferences',
+    'group' => 'generateqrletters',
+    'name' => 'generateqrletters',
+    'type' => 'Array',
+    'html_type' => 'select',
+    'quick_form_type' => 'Element',
+    'default' => '',
+    'add' => '5.40',
+    'title' => ts('QR Letters Settings'),
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => '',
+    'help_text' => '',
+  ];
 }
 
 /**
@@ -167,7 +219,8 @@ function generateqrletters_civicrm_searchTasks($objectName, &$tasks) {
  */
 function generateqrletters_civicrm_tokens(&$tokens) {
   $tokens['generateqrletters'] = [];
-  for ($i = 1; $i <= GENERATEQRCODE_NO_CONTRIBUTIONPAGES; $i++) {
+  $noContPages = CRM_GenerateQRLetters_Utils::getSettingValue('no_contribution_page_ids');
+  for ($i = 1; $i <= $noContPages; $i++) {
     $tokens['generateqrletters']["generateqrletters.qrcode_{$i}"] = ts('Contribution Page QR Code ') . $i;
   }
 }
@@ -187,6 +240,66 @@ function generateqrletters_civicrm_tokenValues(&$values, $cids, $job = NULL, $to
   foreach ($cids as $cid) {
     CRM_GenerateQRLetters_Utils::generateQRCodeToken($values[$cid], $cid);
   }
+}
 
-  //CRM_Core_Error::debug('$values', $values);exit;
+/**
+ * Implements hook_civicrm_navigationMenu().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
+ *
+ */
+function generateqrletters_civicrm_navigationMenu(&$menu) {
+  _generateqrletters_civix_insert_navigation_menu($menu, 'Administer/System Settings', [
+    'label' => ts('QR Letters Settings', ['domain' => 'generateqrletters']),
+    'name' => 'QR Letters Settings',
+    'url' => CRM_Utils_System::url(
+      'civicrm/admin/generateqrletters/settings',
+      'reset=1',
+      TRUE
+    ),
+    'active' => 1,
+    'permission_operator' => 'AND',
+    'permission' => 'administer CiviCRM ',
+  ]);
+}
+
+/**
+ * Implements hook_civicrm_check().
+ *
+ * @throws \CiviCRM_API3_Exception
+ */
+function generateqrletters_civicrm_check(&$messages) {
+  $results = CRM_Core_DAO::executeQuery('
+    SELECT c.id, c.datetime, f.file_id
+    FROM `civicrm_qr_letters_cache` c
+      LEFT JOIN civicrm_entity_file f
+      ON f.entity_id = c.id
+        AND f.entity_table = "civicrm_qr_letters_cache"
+    ORDER BY datetime DESC
+  ')->fetchAll();
+
+  if (empty($results)) {
+    return;
+  }
+
+  $message = '<table><tr><th>Date</th><th>Letters</th></tr>';
+  $dateFormat = CRM_Core_Config::singleton()->dateformatDatetime;
+  foreach ($results as $result) {
+    $date = CRM_Utils_Date::customFormat($result['datetime'], $dateFormat);
+    $file = ts('Processing.....');
+    if (!empty($result['file_id'])) {
+      $url = CRM_GenerateQRLetters_Utils::getfileUrl($result['id'], $result['file_id']);
+      $file = '<a href="' . $url . '"><i class="crm-i fa-paperclip" aria-hidden="true"></i></a>';
+    }
+    $message .= "<tr><td>{$date}</td><td>{$file}</td></tr>";
+  }
+  $message .= '</table>';
+  $msg = new CRM_Utils_Check_Message(
+    __FUNCTION__,
+    $message,
+    ts('QR Letters'),
+    \Psr\Log\LogLevel::INFO,
+    'fa-download'
+  );
+  $messages[] = $msg;
 }

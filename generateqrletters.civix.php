@@ -6,10 +6,10 @@
  * The ExtensionUtil class provides small stubs for accessing resources of this
  * extension.
  */
-class CRM_Generateqrletters_ExtensionUtil {
+class CRM_GenerateQRLetters_ExtensionUtil {
   const SHORT_NAME = 'generateqrletters';
   const LONG_NAME = 'generateqrletters';
-  const CLASS_PREFIX = 'CRM_Generateqrletters';
+  const CLASS_PREFIX = 'CRM_GenerateQRLetters';
 
   /**
    * Translate a string using the extension's domain.
@@ -77,7 +77,7 @@ class CRM_Generateqrletters_ExtensionUtil {
 
 }
 
-use CRM_Generateqrletters_ExtensionUtil as E;
+use CRM_GenerateQRLetters_ExtensionUtil as E;
 
 /**
  * (Delegated) Implements hook_civicrm_config().
@@ -206,14 +206,14 @@ function _generateqrletters_civix_civicrm_upgrade($op, CRM_Queue_Queue $queue = 
 }
 
 /**
- * @return CRM_Generateqrletters_Upgrader
+ * @return CRM_GenerateQRLetters_Upgrader
  */
 function _generateqrletters_civix_upgrader() {
-  if (!file_exists(__DIR__ . '/CRM/Generateqrletters/Upgrader.php')) {
+  if (!file_exists(__DIR__ . '/CRM/GenerateQRLetters/Upgrader.php')) {
     return NULL;
   }
   else {
-    return CRM_Generateqrletters_Upgrader_Base::instance();
+    return CRM_GenerateQRLetters_Upgrader_Base::instance();
   }
 }
 
@@ -449,5 +449,11 @@ function _generateqrletters_civix_civicrm_alterSettingsFolders(&$metaDataFolders
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
  */
 function _generateqrletters_civix_civicrm_entityTypes(&$entityTypes) {
-  $entityTypes = array_merge($entityTypes, []);
+  $entityTypes = array_merge($entityTypes, [
+    'CRM_GenerateQRLetters_DAO_GenerateQRLettersCache' => [
+      'name' => 'GenerateQRLettersCache',
+      'class' => 'CRM_GenerateQRLetters_DAO_GenerateQRLettersCache',
+      'table' => 'civicrm_qr_letters_cache',
+    ],
+  ]);
 }
